@@ -216,8 +216,18 @@
       </div>
 
       <div class="field">
+        <label for="apiUrl">API URL</label>
+        <input id="apiUrl" type="text" value="http://localhost:1234/v1/chat/completions" spellcheck="false">
+      </div>
+
+      <div class="field">
+        <label for="apiKey">API Key</label>
+        <input id="apiKey" type="password" value="" spellcheck="false">
+      </div>
+
+      <div class="field">
         <label for="modelName">Model name</label>
-        <input id="modelName" type="text" value="qwen3.5-0.8b" spellcheck="false">
+        <input id="modelName" type="text" value="qwen3.5-0.8b" placeholder="qwen3.5-0.8b (LM Studio), gemini-2.5-flash (Google AI Studio), meta-llama/llama-3.3-70b-instruct:free (OpenRouter)" spellcheck="false">
       </div>
 
       <div class="actions">
@@ -240,10 +250,10 @@
   </main>
 
   <script>
-    const endpoint = "http://localhost:1234/v1/chat/completions";
-
     const systemPromptEl = document.getElementById("systemPrompt");
     const promptFileEl = document.getElementById("promptFile");
+    const apiUrlEl = document.getElementById("apiUrl");
+    const apiKeyEl = document.getElementById("apiKey");
     const modelNameEl = document.getElementById("modelName");
     const runButtonEl = document.getElementById("runButton");
     const downloadButtonEl = document.getElementById("downloadButton");
@@ -334,12 +344,18 @@
       URL.revokeObjectURL(url);
     }
 
-    async function callModel(model, systemPrompt, input) {
-      const response = await fetch(endpoint, {
+    async function callModel(apiUrl, apiKey, model, systemPrompt, input) {
+      const headers = {
+        "Content-Type": "application/json"
+      };
+
+      if (apiKey) {
+        headers.Authorization = `Bearer ${apiKey}`;
+      }
+
+      const response = await fetch(apiUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers,
         body: JSON.stringify({
           model,
           messages: [
@@ -380,6 +396,8 @@
 
     async function runBatch() {
       const selectedFile = promptFileEl.files && promptFileEl.files[0];
+      const apiUrl = apiUrlEl.value.trim() || "http://localhost:1234/v1/chat/completions";
+      const apiKey = apiKeyEl.value.trim();
       const modelName = modelNameEl.value.trim() || "qwen3.5-0.8b";
       const systemPrompt = systemPromptEl.value;
 
@@ -410,7 +428,7 @@
           let responseText = "";
 
           try {
-            responseText = await callModel(modelName, systemPrompt, line);
+            responseText = await callModel(apiUrl, apiKey, modelName, systemPrompt, line);
           } catch (error) {
             responseText = error instanceof Error ? error.message : String(error);
           }
